@@ -5,7 +5,12 @@ from uuid import UUID
 import redis.asyncio as aioredis
 
 from app.config import settings
-from app.core.tenancy import query_cache_key, rate_limit_org_key, rate_limit_user_key, schema_cache_key
+from app.core.tenancy import (
+    query_cache_key,
+    rate_limit_org_key,
+    rate_limit_user_key,
+    schema_cache_key,
+)
 from app.i18n import t
 
 _redis: aioredis.Redis | None = None

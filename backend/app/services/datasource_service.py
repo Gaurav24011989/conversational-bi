@@ -1,15 +1,14 @@
 import json
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.connectors.base import ConnectionConfig
 from app.connectors.registry import get_connector
 from app.core.encryption import decrypt_value, encrypt_value
-from app.models import DataSource, DataSourceType, SchemaSnapshot
+from app.models import DataSource, DataSourceType
 from app.schemas import ConnectionTestResponse, DataSourceCreate, DataSourceResponse
-from app.services.cache import cache_service
 
 
 class DataSourceService:

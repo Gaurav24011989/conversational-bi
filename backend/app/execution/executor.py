@@ -1,9 +1,8 @@
-import asyncio
 from uuid import UUID
 
+from app.config import settings
 from app.connectors.base import CompiledQuery, ConnectionConfig, QueryLimits, QueryResult
 from app.connectors.registry import get_connector
-from app.config import settings
 from app.execution.guardrails import enforce_table_allowlist, validate_sql_query
 from app.execution.pool_manager import pool_manager
 

@@ -150,7 +150,7 @@ class PostgreSQLConnector:
         if stmt_type not in ("SELECT", "UNKNOWN"):
             return ValidationResult(valid=False, message=f"Only SELECT allowed, got {stmt_type}")
         upper = stripped.upper()
-        if not (upper.startswith("SELECT") or upper.startswith("WITH")):
+        if not (upper.startswith(("SELECT", "WITH"))):
             return ValidationResult(valid=False, message="Query must start with SELECT or WITH")
         return ValidationResult(valid=True)
 
@@ -175,7 +175,7 @@ class PostgreSQLConnector:
 
             columns: list[ResultColumn] = []
             if rows_raw:
-                for key in rows_raw[0].keys():
+                for key in rows_raw[0]:
                     columns.append(ResultColumn(name=key, type="unknown"))
 
             rows: list[dict] = []

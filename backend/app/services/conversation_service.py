@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.graph import query_agent
 from app.i18n import resolve_locale, t
-from app.models import Conversation, Message, MessageRole, Organization, Project, User
-from app.schemas import ConversationCreate, MessageCreate, QueryResponse
+from app.models import Conversation, Message, MessageRole, Organization, User
+from app.schemas import ConversationCreate, MessageCreate
 from app.services.audit_service import audit_service
 from app.services.cache import rate_limiter
 from app.services.datasource_service import datasource_service

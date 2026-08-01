@@ -1,7 +1,5 @@
 from app.agents.state import AgentState
-from app.i18n import t
 from app.schemas import ChartType
-
 
 ALLOWED_CHARTS = {c.value for c in ChartType}
 
