@@ -271,6 +271,48 @@ label {
   margin-top: 2rem;
 }
 
+.section-header {
+  margin-bottom: 0.75rem;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.section-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0;
+}
+
+.conversation-item .conversation-card {
+  flex: 1;
+  padding: 1rem 1.25rem;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.conversation-delete {
+  flex-shrink: 0;
+  margin-right: 1rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.conversation-delete:hover {
+  background: #fecaca;
+}
+
 .badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;

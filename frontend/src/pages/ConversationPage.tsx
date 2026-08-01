@@ -3,6 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { api, ApiClientError } from '../api/client'
 import { QueryResult } from '../components/QueryResult'
 import { useAuth } from '../context/AuthContext'
+import {
+  addStoredConversation,
+  updateStoredConversationTitle,
+} from '../utils/storage'
 import type {
   ClarificationResponse,
   ConversationResponse,
@@ -34,6 +38,13 @@ export function ConversationPage() {
       .then(([conv, msgs]) => {
         setConversation(conv)
         setMessages(msgs)
+        addStoredConversation({
+          id: conv.id,
+          projectId: conv.project_id,
+          datasourceId: conv.datasource_id,
+          title: conv.title,
+          createdAt: conv.created_at,
+        })
       })
       .catch((err) =>
         setError(err instanceof ApiClientError ? err.message : 'Failed to load conversation'),
@@ -49,6 +60,7 @@ export function ConversationPage() {
     e.preventDefault()
     if (!token || !conversationId || !input.trim()) return
     const content = input.trim()
+    const isFirstMessage = messages.length === 0
     setInput('')
     setSending(true)
     setError(null)
@@ -77,6 +89,9 @@ export function ConversationPage() {
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, assistant])
+      if (isFirstMessage) {
+        updateStoredConversationTitle(conversationId, content)
+      }
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Failed to send message')
     } finally {
