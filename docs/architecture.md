@@ -6,13 +6,13 @@ This document provides high-level and low-level architecture views of the platfo
 
 ## 1. High-Level Architecture
 
-The platform is a **multi-tenant, agentic data query service**. Users ask questions in natural language; the system introspects connected data sources, generates a safe read-only query via LLM, executes it, and returns structured JSON for chart rendering in the React GUI (future).
+The platform is a **multi-tenant, agentic data query service**. Users ask questions in natural language; the system introspects connected data sources, generates a safe read-only query via LLM, executes it, and returns structured JSON for chart rendering in the React GUI.
 
 ```mermaid
 flowchart TB
   subgraph users [Users and Clients]
     Analyst[Business Analyst]
-    ReactGUI["React GUI (future)"]
+    ReactGUI["React GUI\n(Vite + Recharts)"]
     APIClient[API Client / SDK]
   end
 
@@ -436,7 +436,11 @@ flowchart LR
     Meta[execution metadata\nfollow_up_questions]
   end
 
-  subgraph gui [React GUI future]
+  subgraph gui [React GUI]
+    AuthPages[Login / Register]
+    Projects[Project management]
+    Datasources[Datasource config]
+    Chat[NL query chat]
     ChartPicker[Chart component selector]
     Bar[Bar Chart]
     Line[Line Chart]
@@ -448,7 +452,8 @@ flowchart LR
   NLQ --> GenQ
   GenQ --> Data
   Data --> Viz
-  Viz --> ChartPicker
+  Viz --> Chat
+  Chat --> ChartPicker
   ChartPicker --> Bar
   ChartPicker --> Line
   ChartPicker --> Table
@@ -458,9 +463,54 @@ flowchart LR
 
 ---
 
+## 8. Frontend Architecture
+
+The React SPA (`frontend/`) consumes the REST API and renders `QueryResponse` payloads.
+
+```mermaid
+flowchart TB
+  subgraph frontend [frontend/src]
+    APIClient[api/client.ts]
+    AuthCtx[AuthContext\nJWT in localStorage]
+    Pages[pages/\nLogin, Projects, Conversation]
+    Components[components/\nQueryResult, ChartView, DataTable]
+    Storage[utils/storage.ts\nconversation list cache]
+  end
+
+  subgraph vite [Vite Dev Server]
+    Proxy["/api proxy → backend:8000"]
+  end
+
+  subgraph tests [frontend/e2e]
+    Playwright[Playwright tests]
+    Mocks[API route mocks]
+  end
+
+  Pages --> APIClient
+  APIClient --> Proxy
+  Proxy --> BackendAPI[FastAPI /api/v1]
+  Pages --> Components
+  Pages --> Storage
+  Playwright --> Mocks
+  Mocks --> Pages
+```
+
+### Frontend routes
+
+| Route | Page | Auth |
+|-------|------|------|
+| `/login` | Login | Public |
+| `/register` | Register | Public |
+| `/projects` | Project list | Protected |
+| `/projects/:id` | Project detail (datasources, conversations) | Protected |
+| `/projects/:id/conversations/:id` | NL query chat | Protected |
+
+---
+
 ## Related documentation
 
 - [Architecture decisions](decisions.md)
 - [API reference](../backend/docs/api.md)
 - [JSON response contract](../backend/docs/json-response-contract.md)
+- [Frontend README](../frontend/README.md)
 - [Audit log partitioning](../backend/docs/audit-partitioning.md)

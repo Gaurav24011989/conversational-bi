@@ -12,3 +12,4 @@ Adopted defaults for Conversational BI backend implementation (per architecture 
 | Metadata store | PostgreSQL |
 | LLM provider | Google Gemini (swappable via LangChain factory) |
 | Agent framework | LangGraph + LangChain + LangSmith |
+| Frontend | React 19 + Vite 8 + Recharts; Playwright e2e with API mocks |

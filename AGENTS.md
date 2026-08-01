@@ -6,7 +6,7 @@ This file is the canonical project context for AI coding agents. Read it before 
 
 **Conversational BI** is a multi-tenant, agentic platform that lets users ask natural-language questions against connected data sources and receive structured JSON responses (data + chart recommendations) for visualization.
 
-- **Current scope**: Python backend MVP; React GUI is planned but not in this repo yet.
+- **Current scope**: Python backend MVP + React/Vite frontend GUI with Playwright e2e tests.
 - **Core flow**: User message → LangGraph agent (schema retrieval → query generation → validation → execution → response formatting) → `QueryResponse` JSON.
 - **Tenant model**: Organization → Project → DataSource, with users and RBAC memberships.
 
@@ -14,8 +14,10 @@ This file is the canonical project context for AI coding agents. Read it before 
 
 | Layer | Technology |
 |-------|------------|
-| Language | Python 3.11+ |
+| Language | Python 3.11+ (backend), TypeScript (frontend) |
 | API | FastAPI, Uvicorn |
+| Frontend | React 19, Vite 8, React Router, Recharts |
+| E2E tests | Playwright (`frontend/e2e/`) |
 | ORM / DB | SQLAlchemy 2 (async), asyncpg, Alembic migrations |
 | Auth | JWT (python-jose), passlib/bcrypt, Authlib (OIDC hooks) |
 | Cache / queue | Redis, Celery |
@@ -56,9 +58,13 @@ This file is the canonical project context for AI coding agents. Read it before 
     ├── docs/              # API, JSON contract, audit partitioning
     ├── docker/            # Dockerfile + docker-compose.yml
     └── pyproject.toml
+└── frontend/
+    ├── src/               # React SPA (api client, pages, components)
+    ├── e2e/               # Playwright tests with API mocks
+    └── package.json
 ```
 
-All application code lives under `backend/`. Run commands from `backend/` unless noted otherwise.
+Run backend commands from `backend/` and frontend commands from `frontend/` unless noted otherwise.
 
 ## Development setup
 
@@ -73,6 +79,18 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 - API docs: http://localhost:8000/docs
 - Health check: `GET /health` (no auth)
+
+### Frontend setup
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+- GUI: http://localhost:5173 (proxies `/api` to backend in dev)
+- E2E tests: `npm run test:e2e` (mocks backend API; no live services required)
 
 ### Required environment variables
 
@@ -123,13 +141,28 @@ See `backend/.env.example` and `README.md` for the full list.
 - Translation strings in `app/i18n/translations/<locale>.json`.
 - Use `app.i18n.t()` for user-facing messages; resolve locale via `Accept-Language` or user preference.
 
+### Frontend conventions
+
+- TypeScript types in `frontend/src/types/api.ts` mirror backend Pydantic schemas and `QueryResponse` contract.
+- API client in `frontend/src/api/client.ts`; JWT stored in `localStorage` via `frontend/src/utils/storage.ts`.
+- Pages use React Router; protected routes wrapped in `ProtectedRoute`.
+- Chart rendering branches on `visualization.chart_type` in `QueryResult` component.
+- Conversation list is client-side (`localStorage`) until a backend list endpoint exists.
+- `data-testid` attributes on interactive elements for Playwright e2e tests.
+
 ## Testing
 
 ### Running tests
 
 ```bash
+# Backend
 cd backend
 pytest tests/ -v
+
+# Frontend e2e
+cd frontend
+npx playwright install chromium
+npm run test:e2e
 ```
 
 - Pytest config: `asyncio_mode = "auto"` in `pyproject.toml`.
@@ -141,6 +174,7 @@ pytest tests/ -v
 |------|----------|---------|----------|
 | **Unit** | `tests/unit/` | Pure logic, no external services | Test guardrails, connectors' `validate_query`, i18n helpers, encryption utilities. Use plain `pytest` classes/functions; mock external deps when needed. |
 | **Integration** | `tests/integration/` | API wiring | Use `httpx.AsyncClient` with `ASGITransport(app=app)` against the FastAPI app. Test health, auth flows, and endpoint contracts. |
+| **E2E** | `frontend/e2e/` | GUI flows | Playwright with route-mocked API. Cover auth, projects, datasources, conversations (positive, negative, edge cases). |
 
 ### What to test
 
@@ -187,12 +221,14 @@ Auth: Bearer JWT on all endpoints except `/auth/register`, `/auth/login`, `/heal
 | [backend/docs/json-response-contract.md](backend/docs/json-response-contract.md) | `QueryResponse` schema for GUI |
 | [backend/docs/audit-partitioning.md](backend/docs/audit-partitioning.md) | Audit log scaling strategy |
 | [backend/README.md](backend/README.md) | Datasource config examples (incl. Elasticsearch) |
+| [frontend/README.md](frontend/README.md) | Frontend setup, scripts, e2e tests |
 
 ## Agent workflow tips
 
 1. **Start here** and skim [docs/architecture.md](docs/architecture.md) for the subsystem you are changing.
-2. **Run tests** from `backend/` after edits: `pytest tests/ -v`.
-3. **Lint** with `ruff check app tests` (if ruff is installed).
+2. **Run backend tests** from `backend/`: `pytest tests/ -v`.
+3. **Run frontend e2e** from `frontend/`: `npm run test:e2e`.
+4. **Lint** with `ruff check app tests` (if ruff is installed).
 4. **Do not commit** `.env` files or secrets.
 5. **New features** that affect the API should update `backend/docs/api.md` and/or OpenAPI via route docstrings.
 6. **Schema changes** require an Alembic migration.
@@ -200,7 +236,7 @@ Auth: Bearer JWT on all endpoints except `/auth/register`, `/auth/login`, `/heal
 
 ## Out of scope (for now)
 
-- React frontend (referenced in architecture docs only)
 - Write operations on customer databases
+- Backend conversation list endpoint (frontend uses localStorage)
 - CI/CD pipelines (not yet in repo)
 - Production Kubernetes manifests (architecture documented, not implemented in repo)
