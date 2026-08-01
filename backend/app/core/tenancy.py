@@ -1,7 +1,5 @@
 from uuid import UUID
 
-from app.core.rbac import TenantContext
-
 
 def schema_cache_key(org_id: UUID, project_id: UUID, datasource_id: UUID) -> str:
     return f"org:{org_id}:project:{project_id}:ds:{datasource_id}:schema"

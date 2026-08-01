@@ -219,8 +219,7 @@ class ElasticsearchConnector:
         index = payload["index"]
         body = dict(payload["body"])
         body.setdefault("size", limits.max_rows + 1)
-        if body["size"] > limits.max_rows + 1:
-            body["size"] = limits.max_rows + 1
+        body["size"] = min(body["size"], limits.max_rows + 1)
 
         start = time.monotonic()
         client = self._client(config)

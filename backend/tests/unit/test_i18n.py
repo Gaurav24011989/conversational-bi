@@ -1,4 +1,3 @@
-import pytest
 
 from app.i18n import (
     get_locale_name,

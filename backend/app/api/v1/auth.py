@@ -1,10 +1,14 @@
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, get_current_user, get_password_hash, verify_password
+from app.core.security import (
+    create_access_token,
+    get_current_user,
+    get_password_hash,
+    verify_password,
+)
 from app.database import get_db
 from app.i18n import is_supported_locale, t
 from app.models import Organization, Project, ProjectMembership, User, UserRole

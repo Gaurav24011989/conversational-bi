@@ -136,7 +136,7 @@ class MySQLConnector:
         if len(parsed) != 1:
             return ValidationResult(valid=False, message="Only single statements allowed")
         upper = stripped.upper()
-        if not (upper.startswith("SELECT") or upper.startswith("WITH")):
+        if not (upper.startswith(("SELECT", "WITH"))):
             return ValidationResult(valid=False, message="Query must start with SELECT or WITH")
         return ValidationResult(valid=True)
 

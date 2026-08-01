@@ -17,7 +17,7 @@ def validate_sql_query(query: str) -> tuple[bool, str]:
     if len(parsed) != 1:
         return False, "Only single statements allowed"
     upper = stripped.upper()
-    if not (upper.startswith("SELECT") or upper.startswith("WITH")):
+    if not (upper.startswith(("SELECT", "WITH"))):
         return False, "Query must start with SELECT or WITH"
     return True, ""
 

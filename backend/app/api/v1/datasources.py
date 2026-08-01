@@ -70,7 +70,6 @@ async def refresh_schema(
 ):
     ds, _ = await require_datasource_access(db, current_user, datasource_id, "configure_datasource")
     from sqlalchemy import select
-    from app.models import Project
 
     project_result = await db.execute(select(Project).where(Project.id == ds.project_id))
     project = project_result.scalar_one()

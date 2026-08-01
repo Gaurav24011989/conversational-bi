@@ -1,4 +1,3 @@
-import pytest
 
 from app.connectors.postgresql import PostgreSQLConnector
 
