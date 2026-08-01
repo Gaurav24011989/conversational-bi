@@ -1,0 +1,306 @@
+name: Deploy to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_name:
+        description: Environment suffix used in Azure resource names (e.g. test)
+        required: true
+        default: test
+        type: string
+      azure_location:
+        description: Azure region
+        required: true
+        default: eastus
+        type: choice
+        options:
+          - eastus
+          - eastus2
+          - westus2
+          - centralus
+          - northeurope
+          - westeurope
+      deploy_infrastructure:
+        description: Deploy or update Bicep infrastructure
+        required: true
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: Build and deploy the React frontend to Static Web Apps
+        required: true
+        default: true
+        type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'infra/**'
+      - '.github/workflows/azure-deploy.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ENVIRONMENT_NAME: ${{ github.event.inputs.environment_name || 'test' }}
+  AZURE_LOCATION: ${{ github.event.inputs.azure_location || 'eastus' }}
+  RESOURCE_GROUP: rg-conversational-bi-${{ github.event.inputs.environment_name || 'test' }}
+  IMAGE_NAME: conversational-bi-api
+  BICEP_FILE: infra/azure/main.bicep
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Backend tests
+        working-directory: backend
+        run: |
+          pip install -e ".[dev]"
+          ruff check app tests
+          pytest tests/ -v
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_BASE_URL: https://placeholder.example.com
+
+  infrastructure:
+    name: Infrastructure
+    needs: validate
+    runs-on: ubuntu-latest
+    outputs:
+      acr_login_server: ${{ steps.outputs.outputs.acrLoginServer }}
+      acr_name: ${{ steps.outputs.outputs.acrName }}
+      api_url: ${{ steps.outputs.outputs.apiUrl }}
+      static_web_app_name: ${{ steps.outputs.outputs.staticWebAppName }}
+      static_web_app_url: ${{ steps.outputs.outputs.staticWebAppUrl }}
+    env:
+      DEPLOY_INFRA: ${{ github.event_name == 'push' && 'true' || github.event.inputs.deploy_infrastructure }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create resource group
+        run: |
+          az group create \
+            --name "${{ env.RESOURCE_GROUP }}" \
+            --location "${{ env.AZURE_LOCATION }}" \
+            --tags project=conversational-bi environment=${{ env.ENVIRONMENT_NAME }}
+
+      - name: Deploy Bicep
+        if: env.DEPLOY_INFRA == 'true'
+        uses: azure/arm-deploy@v2
+        id: deploy
+        with:
+          type: deployment
+          resourceGroupName: ${{ env.RESOURCE_GROUP }}
+          template: ${{ env.BICEP_FILE }}
+          parameters: >
+            environmentName=${{ env.ENVIRONMENT_NAME }}
+            location=${{ env.AZURE_LOCATION }}
+            containerImageTag=${{ github.sha }}
+            postgresAdminPassword=${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+            secretKey=${{ secrets.SECRET_KEY }}
+            encryptionKey=${{ secrets.ENCRYPTION_KEY }}
+            geminiApiKey=${{ secrets.GEMINI_API_KEY }}
+            deployStaticWebApp=true
+
+      - name: Read existing deployment outputs
+        if: env.DEPLOY_INFRA != 'true'
+        id: existing
+        run: |
+          DEPLOYMENT_NAME=$(az deployment group list \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --query "[?properties.provisioningState=='Succeeded'] | sort_by(@, &properties.timestamp) | [-1].name" \
+            -o tsv)
+          if [ -z "$DEPLOYMENT_NAME" ]; then
+            echo "No successful Bicep deployment found. Run once with deploy_infrastructure=true."
+            exit 1
+          fi
+          az deployment group show \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --name "$DEPLOYMENT_NAME" \
+            --query properties.outputs \
+            -o json > deployment-outputs.json
+
+      - name: Set job outputs
+        id: outputs
+        run: |
+          if [ "${{ env.DEPLOY_INFRA }}" = "true" ]; then
+            echo "acrLoginServer=${{ steps.deploy.outputs.acrLoginServer }}" >> "${GITHUB_OUTPUT}"
+            echo "acrName=${{ steps.deploy.outputs.acrName }}" >> "${GITHUB_OUTPUT}"
+            echo "apiUrl=${{ steps.deploy.outputs.apiUrl }}" >> "${GITHUB_OUTPUT}"
+            echo "staticWebAppName=${{ steps.deploy.outputs.staticWebAppName }}" >> "${GITHUB_OUTPUT}"
+            echo "staticWebAppUrl=${{ steps.deploy.outputs.staticWebAppUrl }}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "acrLoginServer=$(jq -r '.acrLoginServer.value' deployment-outputs.json)" >> "${GITHUB_OUTPUT}"
+            echo "acrName=$(jq -r '.acrName.value' deployment-outputs.json)" >> "${GITHUB_OUTPUT}"
+            echo "apiUrl=$(jq -r '.apiUrl.value' deployment-outputs.json)" >> "${GITHUB_OUTPUT}"
+            echo "staticWebAppName=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "${GITHUB_OUTPUT}"
+            echo "staticWebAppUrl=$(jq -r '.staticWebAppUrl.value' deployment-outputs.json)" >> "${GITHUB_OUTPUT}"
+          fi
+
+  build-and-push:
+    name: Build and push API image
+    needs: infrastructure
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        run: az acr login --name "${{ needs.infrastructure.outputs.acr_name }}"
+
+      - name: Build and push backend image
+        run: |
+          IMAGE="${{ needs.infrastructure.outputs.acr_login_server }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build \
+            -f backend/docker/Dockerfile \
+            -t "${IMAGE}" \
+            -t "${{ needs.infrastructure.outputs.acr_login_server }}/${{ env.IMAGE_NAME }}:latest" \
+            backend
+          docker push "${IMAGE}"
+          docker push "${{ needs.infrastructure.outputs.acr_login_server }}/${{ env.IMAGE_NAME }}:latest"
+
+  deploy-apps:
+    name: Deploy Container Apps
+    needs: [infrastructure, build-and-push]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update API container app image
+        run: |
+          az containerapp update \
+            --name "cbi-${{ env.ENVIRONMENT_NAME }}-api" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ needs.infrastructure.outputs.acr_login_server }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+      - name: Update worker container app image
+        run: |
+          az containerapp update \
+            --name "cbi-${{ env.ENVIRONMENT_NAME }}-worker" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ needs.infrastructure.outputs.acr_login_server }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+      - name: Wait for API health
+        run: |
+          API_URL="${{ needs.infrastructure.outputs.api_url }}"
+          for i in $(seq 1 30); do
+            if curl -fsS "${API_URL}/health" >/dev/null; then
+              echo "API is healthy at ${API_URL}"
+              exit 0
+            fi
+            echo "Waiting for API... (${i}/30)"
+            sleep 20
+          done
+          echo "API health check failed"
+          exit 1
+
+  deploy-frontend:
+    name: Deploy frontend
+    needs: [infrastructure, deploy-apps]
+    if: github.event_name == 'push' || github.event.inputs.deploy_frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_BASE_URL: ${{ needs.infrastructure.outputs.api_url }}
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Static Web App deployment token
+        id: swa
+        run: |
+          TOKEN=$(az staticwebapp secrets list \
+            --name "${{ needs.infrastructure.outputs.static_web_app_name }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --query "properties.apiKey" -o tsv)
+          echo "token=${TOKEN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: frontend
+          output_location: dist
+          skip_app_build: true
+
+  summary:
+    name: Deployment summary
+    needs: [infrastructure, deploy-apps, deploy-frontend]
+    if: >-
+      always() &&
+      needs.infrastructure.result == 'success' &&
+      needs.deploy-apps.result == 'success' &&
+      (needs.deploy-frontend.result == 'success' || needs.deploy-frontend.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print endpoints
+        run: |
+          echo "## Deployment complete" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Resource | URL |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "|----------|-----|" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| API | ${{ needs.infrastructure.outputs.api_url }} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| API docs | ${{ needs.infrastructure.outputs.api_url }}/docs |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Frontend | ${{ needs.infrastructure.outputs.static_web_app_url }} |" >> "${GITHUB_STEP_SUMMARY}"
