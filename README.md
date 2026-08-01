@@ -10,7 +10,7 @@ Multi-tenant agentic platform for natural-language data queries across PostgreSQ
 - **Observability**: LangSmith tracing
 - **Cache/Queue**: Redis for schema cache, rate limiting, Celery workers
 
-See [docs/decisions.md](docs/decisions.md) for architecture decisions and [backend/docs/](backend/docs/) for API docs.
+See [docs/architecture.md](docs/architecture.md) for high-level and low-level architecture diagrams, [docs/decisions.md](docs/decisions.md) for architecture decisions, and [backend/docs/](backend/docs/) for API docs.
 
 ## Quick start
 
