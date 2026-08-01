@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import require_project_access
 from app.core.security import get_current_user
 from app.database import get_db
+from app.i18n import t
 from app.models import User
 from app.schemas import (
     ClarificationResponse,
@@ -32,6 +33,7 @@ def _build_query_response(msg, conv_id: UUID) -> QueryResponse | ClarificationRe
     return QueryResponse(
         message_id=msg.id,
         conversation_id=conv_id,
+        locale=data.get("locale"),
         natural_language_query=data.get("natural_language_query", ""),
         generated_query=data.get("generated_query"),
         query_language=data.get("query_language"),
@@ -74,17 +76,21 @@ async def get_conversation(
 async def send_message(
     conversation_id: UUID,
     data: MessageCreate,
+    accept_language: str | None = Header(default=None, alias="Accept-Language"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     conv = await conversation_service.get(db, conversation_id)
     if not conv:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        raise HTTPException(
+            status_code=404,
+            detail=t("errors.conversation_not_found", current_user.preferred_locale or "en"),
+        )
     await require_project_access(db, current_user, conv.project_id, "query")
 
     try:
         _, assistant_msg = await conversation_service.send_message(
-            db, conv, current_user.id, current_user.org_id, data
+            db, conv, current_user, current_user.org_id, data, accept_language=accept_language
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

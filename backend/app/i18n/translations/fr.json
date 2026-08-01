@@ -1,0 +1,9 @@
+{
+  "errors.user_rate_limit": "Limite de requêtes utilisateur dépassée",
+  "errors.org_rate_limit": "Limite de requêtes organisation dépassée",
+  "errors.query_generation_failed": "Échec de la génération de la requête : {detail}",
+  "errors.datasource_not_found": "Source de données introuvable",
+  "errors.conversation_not_found": "Conversation introuvable",
+  "errors.unsupported_locale": "Langue non prise en charge : {locale}",
+  "errors.query_error": "Erreur de requête"
+}

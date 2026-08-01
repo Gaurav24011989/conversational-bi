@@ -34,6 +34,7 @@ class AgentState(TypedDict):
     allowed_tables: list[str] | None
     schema_context: dict[str, Any]
     natural_language_query: str
+    locale: str
     generated_query: str | None
     query_language: str | None
     explanation: str | None

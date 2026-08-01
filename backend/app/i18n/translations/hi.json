@@ -1,0 +1,9 @@
+{
+  "errors.user_rate_limit": "उपयोगकर्ता दर सीमा पार हो गई",
+  "errors.org_rate_limit": "संगठन दर सीमा पार हो गई",
+  "errors.query_generation_failed": "क्वेरी बनाने में विफल: {detail}",
+  "errors.datasource_not_found": "डेटा स्रोत नहीं मिला",
+  "errors.conversation_not_found": "वार्तालाप नहीं मिला",
+  "errors.unsupported_locale": "असमर्थित भाषा: {locale}",
+  "errors.query_error": "क्वेरी त्रुटि"
+}

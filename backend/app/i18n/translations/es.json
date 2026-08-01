@@ -1,0 +1,9 @@
+{
+  "errors.user_rate_limit": "Límite de consultas del usuario superado",
+  "errors.org_rate_limit": "Límite de consultas de la organización superado",
+  "errors.query_generation_failed": "No se pudo generar la consulta: {detail}",
+  "errors.datasource_not_found": "Fuente de datos no encontrada",
+  "errors.conversation_not_found": "Conversación no encontrada",
+  "errors.unsupported_locale": "Idioma no compatible: {locale}",
+  "errors.query_error": "Error de consulta"
+}

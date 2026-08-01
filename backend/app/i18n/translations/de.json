@@ -1,0 +1,9 @@
+{
+  "errors.user_rate_limit": "Benutzer-Ratenlimit überschritten",
+  "errors.org_rate_limit": "Organisations-Ratenlimit überschritten",
+  "errors.query_generation_failed": "Abfrage konnte nicht erstellt werden: {detail}",
+  "errors.datasource_not_found": "Datenquelle nicht gefunden",
+  "errors.conversation_not_found": "Unterhaltung nicht gefunden",
+  "errors.unsupported_locale": "Nicht unterstützte Sprache: {locale}",
+  "errors.query_error": "Abfragefehler"
+}

@@ -1,0 +1,9 @@
+{
+  "errors.user_rate_limit": "已超过用户请求频率限制",
+  "errors.org_rate_limit": "已超过组织请求频率限制",
+  "errors.query_generation_failed": "生成查询失败：{detail}",
+  "errors.datasource_not_found": "未找到数据源",
+  "errors.conversation_not_found": "未找到对话",
+  "errors.unsupported_locale": "不支持的语言：{locale}",
+  "errors.query_error": "查询错误"
+}
