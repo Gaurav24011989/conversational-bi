@@ -6,7 +6,6 @@ from langchain_core.messages import SystemMessage
 from app.agents.state import AgentState, GeneratedQueryOutput
 from app.llm.factory import get_chat_model
 
-
 _PROMPT_FILES = {
     "postgresql": "system_sql.md",
     "mysql": "system_sql.md",
