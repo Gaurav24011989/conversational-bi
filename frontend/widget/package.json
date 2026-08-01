@@ -1,0 +1,55 @@
+{
+  "name": "conversational-bi-widget",
+  "version": "0.1.0",
+  "description": "Embeddable React widget for Conversational BI natural-language data queries",
+  "type": "module",
+  "main": "./dist/conversational-bi-widget.cjs",
+  "module": "./dist/conversational-bi-widget.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/conversational-bi-widget.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/conversational-bi-widget.cjs"
+      }
+    },
+    "./style.css": "./dist/conversational-bi-widget.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && vite build",
+    "dev": "vite build --watch"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "keywords": [
+    "conversational-bi",
+    "react",
+    "widget",
+    "embed",
+    "natural-language",
+    "analytics"
+  ],
+  "license": "MIT"
+}
