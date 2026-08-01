@@ -15,14 +15,136 @@ test.describe('Conversations', () => {
 
   test('positive: start conversation and navigate to chat', async ({ page }) => {
     await page.getByTestId(`start-conversation-${MOCK_DATASOURCE.id}`).click()
-    await expect(page.getByTestId('conversation-list')).toBeVisible()
-    await page.getByTestId(`conversation-link-${MOCK_CONVERSATION.id}`).click()
 
     await expect(page).toHaveURL(
       new RegExp(`/projects/${MOCK_PROJECT.id}/conversations/${MOCK_CONVERSATION.id}`),
     )
     await expect(page.getByTestId('conversation-page')).toBeVisible()
     await expect(page.getByTestId('messages-empty')).toBeVisible()
+  })
+
+  test('positive: delete conversation from local history', async ({ page }) => {
+    await page.evaluate(
+      ({ conversation, projectId, datasourceId }) => {
+        localStorage.setItem(
+          'cbi_conversations',
+          JSON.stringify([
+            {
+              id: conversation.id,
+              projectId,
+              datasourceId,
+              title: 'Revenue analysis',
+              createdAt: conversation.created_at,
+              lastAccessedAt: conversation.created_at,
+            },
+          ]),
+        )
+      },
+      {
+        conversation: MOCK_CONVERSATION,
+        projectId: MOCK_PROJECT.id,
+        datasourceId: MOCK_DATASOURCE.id,
+      },
+    )
+    await page.reload()
+
+    await expect(page.getByTestId(`conversation-link-${MOCK_CONVERSATION.id}`)).toBeVisible()
+    await page.getByTestId(`delete-conversation-${MOCK_CONVERSATION.id}`).click()
+    await expect(page.getByTestId('conversations-empty')).toBeVisible()
+    await expect(page.getByTestId(`conversation-link-${MOCK_CONVERSATION.id}`)).toHaveCount(0)
+  })
+
+  test('positive: continue existing conversation from local history', async ({ page }) => {
+    await page.evaluate(
+      ({ conversation, projectId, datasourceId }) => {
+        localStorage.setItem(
+          'cbi_conversations',
+          JSON.stringify([
+            {
+              id: conversation.id,
+              projectId,
+              datasourceId,
+              title: 'Saved conversation',
+              createdAt: conversation.created_at,
+              lastAccessedAt: conversation.created_at,
+            },
+          ]),
+        )
+      },
+      {
+        conversation: MOCK_CONVERSATION,
+        projectId: MOCK_PROJECT.id,
+        datasourceId: MOCK_DATASOURCE.id,
+      },
+    )
+    await page.reload()
+
+    await page.getByTestId(`conversation-link-${MOCK_CONVERSATION.id}`).click()
+    await expect(page.getByTestId('conversation-page')).toBeVisible()
+    await expect(page.getByTestId('messages-empty')).toBeVisible()
+  })
+
+  test('edge: only last 5 conversations are kept per project', async ({ page }) => {
+    const newConversationId = 'conv-new-new-new-new-newnewnewnewnew'
+    await page.evaluate(
+      ({ projectId, datasourceId }) => {
+        const conversations = Array.from({ length: 5 }, (_, index) => ({
+          id: `conv-old-${index}`,
+          projectId,
+          datasourceId,
+          title: `Conversation ${index}`,
+          createdAt: new Date(2025, 0, index + 1).toISOString(),
+          lastAccessedAt: new Date(2025, 0, index + 1).toISOString(),
+        }))
+        localStorage.setItem('cbi_conversations', JSON.stringify(conversations))
+      },
+      { projectId: MOCK_PROJECT.id, datasourceId: MOCK_DATASOURCE.id },
+    )
+    await page.reload()
+
+    await page.route('**/api/v1/projects/**/conversations', async (route) => {
+      if (route.request().method() === 'POST') {
+        return route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ...MOCK_CONVERSATION,
+            id: newConversationId,
+            title: 'Newest conversation',
+            created_at: new Date(2025, 5, 1).toISOString(),
+          }),
+        })
+      }
+      return route.continue()
+    })
+    await page.route(`**/api/v1/conversations/${newConversationId}`, async (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ...MOCK_CONVERSATION,
+            id: newConversationId,
+            title: 'Newest conversation',
+          }),
+        })
+      }
+      return route.continue()
+    })
+    await page.route(`**/api/v1/conversations/${newConversationId}/messages`, async (route) => {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      })
+    })
+
+    await page.getByTestId(`start-conversation-${MOCK_DATASOURCE.id}`).click()
+    await page.getByRole('link', { name: '← Back to project' }).click()
+
+    await expect(page.getByTestId('conversation-list').locator('li')).toHaveCount(5)
+    await expect(page.getByTestId('conversation-link-conv-old-0')).toHaveCount(0)
+    await expect(page.getByTestId(`conversation-link-${newConversationId}`)).toBeVisible()
   })
 
   test('positive: send message and render query result with chart', async ({ page }) => {

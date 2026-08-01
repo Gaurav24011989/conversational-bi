@@ -1,8 +1,13 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiClientError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
-import { addStoredConversation, getStoredConversations } from '../utils/storage'
+import {
+  addStoredConversation,
+  getStoredConversations,
+  MAX_STORED_CONVERSATIONS,
+  removeStoredConversation,
+} from '../utils/storage'
 import type { DataSourceResponse, DataSourceType, ProjectResponse } from '../types/api'
 
 const DEFAULT_PORTS: Record<DataSourceType, number> = {
@@ -14,6 +19,7 @@ const DEFAULT_PORTS: Record<DataSourceType, number> = {
 
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const navigate = useNavigate()
   const { token } = useAuth()
   const [project, setProject] = useState<ProjectResponse | null>(null)
   const [datasources, setDatasources] = useState<DataSourceResponse[]>([])
@@ -44,6 +50,7 @@ export function ProjectDetailPage() {
       .then(([proj, ds]) => {
         setProject(proj)
         setDatasources(ds)
+        setConversations(getStoredConversations(projectId))
       })
       .catch((err) =>
         setError(err instanceof ApiClientError ? err.message : 'Failed to load project'),
@@ -112,6 +119,13 @@ export function ProjectDetailPage() {
     }
   }
 
+  function handleDeleteConversation(event: MouseEvent<HTMLButtonElement>, conversationId: string) {
+    event.preventDefault()
+    if (!projectId) return
+    removeStoredConversation(conversationId)
+    setConversations(getStoredConversations(projectId))
+  }
+
   async function handleStartConversation(datasourceId: string) {
     if (!token || !projectId) return
     setStartingConversation(datasourceId)
@@ -125,7 +139,7 @@ export function ProjectDetailPage() {
         title: conv.title,
         createdAt: conv.created_at,
       })
-      setConversations(getStoredConversations(projectId))
+      navigate(`/projects/${projectId}/conversations/${conv.id}`)
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Failed to start conversation')
     } finally {
@@ -298,7 +312,12 @@ export function ProjectDetailPage() {
       </section>
 
       <section className="section">
-        <h2>Conversations</h2>
+        <div className="section-header">
+          <h2>Recent conversations</h2>
+          <p className="section-hint">
+            Up to {MAX_STORED_CONVERSATIONS} conversations are saved locally in this browser.
+          </p>
+        </div>
         {conversations.length === 0 ? (
           <div className="empty-state card" data-testid="conversations-empty">
             <p>No conversations yet. Start one from a data source above.</p>
@@ -306,17 +325,26 @@ export function ProjectDetailPage() {
         ) : (
           <ul className="conversation-list" data-testid="conversation-list">
             {conversations.map((conv) => (
-              <li key={conv.id}>
+              <li key={conv.id} className="conversation-item card">
                 <Link
                   to={`/projects/${projectId}/conversations/${conv.id}`}
-                  className="card conversation-card"
+                  className="conversation-card"
                   data-testid={`conversation-link-${conv.id}`}
                 >
                   <h3>{conv.title ?? 'Untitled conversation'}</h3>
                   <span className="meta">
-                    {new Date(conv.createdAt).toLocaleString()}
+                    Last opened {new Date(conv.lastAccessedAt).toLocaleString()}
                   </span>
                 </Link>
+                <button
+                  type="button"
+                  className="conversation-delete"
+                  onClick={(event) => handleDeleteConversation(event, conv.id)}
+                  data-testid={`delete-conversation-${conv.id}`}
+                  aria-label={`Delete conversation ${conv.title ?? 'Untitled conversation'}`}
+                >
+                  Delete
+                </button>
               </li>
             ))}
           </ul>
