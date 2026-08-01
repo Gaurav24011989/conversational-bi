@@ -1,6 +1,6 @@
 # Conversational BI
 
-Multi-tenant agentic platform for natural-language data queries across PostgreSQL, MySQL, and MongoDB.
+Multi-tenant agentic platform for natural-language data queries across PostgreSQL, MySQL, MongoDB, and Elasticsearch.
 
 ## Architecture
 
@@ -54,7 +54,7 @@ backend/
   app/
     api/v1/          # REST endpoints
     agents/          # LangGraph query agent
-    connectors/      # PostgreSQL, MySQL, MongoDB plugins
+    connectors/      # PostgreSQL, MySQL, MongoDB, Elasticsearch plugins
     core/            # Auth, RBAC, encryption, tenancy
     execution/       # Query executor, guardrails, pool manager
     llm/             # LLM provider factory

@@ -5,7 +5,7 @@ Adopted defaults for Conversational BI backend implementation (per architecture 
 | Decision | Choice |
 |----------|--------|
 | DB connectivity | Hybrid: direct connection + connector agent hook points for Phase 2 |
-| Phase 1 data sources | PostgreSQL, MySQL, MongoDB |
+| Phase 1 data sources | PostgreSQL, MySQL, MongoDB, Elasticsearch |
 | Auth | Built-in JWT + OIDC SSO hook points (Authlib) |
 | Query mode | Read-only analytics (SELECT / aggregation pipelines only) |
 | Deployment | Kubernetes-ready, cloud-agnostic Docker images |

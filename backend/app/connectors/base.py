@@ -84,7 +84,7 @@ class QueryLimits:
 @dataclass
 class CompiledQuery:
     query: str
-    language: str  # sql | mongodb
+    language: str  # sql | mongodb | elasticsearch
 
 
 @dataclass

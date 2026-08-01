@@ -97,6 +97,7 @@ class DataSourceType(str, enum.Enum):
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
     MONGODB = "mongodb"
+    ELASTICSEARCH = "elasticsearch"
 
 
 class DataSource(Base):
