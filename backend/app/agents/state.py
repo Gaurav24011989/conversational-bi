@@ -16,7 +16,7 @@ class VisualizationDraft(BaseModel):
 
 class GeneratedQueryOutput(BaseModel):
     query: str
-    query_language: Literal["sql", "mongodb"]
+    query_language: Literal["sql", "mongodb", "elasticsearch"]
     confidence: float = Field(ge=0.0, le=1.0)
     explanation: str = ""
     visualization: VisualizationDraft = Field(default_factory=VisualizationDraft)

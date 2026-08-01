@@ -1,4 +1,4 @@
-from uuid import UUID
+import json
 
 from app.agents.state import AgentState
 from app.connectors.registry import get_connector
@@ -21,5 +21,15 @@ async def validate_query_node(state: AgentState) -> dict:
         ok, msg = enforce_table_allowlist(query, allowed_tables)
         if not ok:
             return {"error": msg}
+
+    if state.get("query_language") == "elasticsearch":
+        allowed_indices = state.get("allowed_tables")
+        if allowed_indices:
+            try:
+                index_name = json.loads(query).get("index", "")
+            except json.JSONDecodeError:
+                return {"error": "Invalid Elasticsearch query JSON"}
+            if not any(idx in index_name or index_name in idx for idx in allowed_indices):
+                return {"error": f"Query must target one of allowed indices: {allowed_indices}"}
 
     return {"error": None}

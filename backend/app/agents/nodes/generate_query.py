@@ -6,9 +6,17 @@ from langchain_core.messages import SystemMessage
 from app.agents.state import AgentState, GeneratedQueryOutput
 from app.llm.factory import get_chat_model
 
+_PROMPT_FILES = {
+    "postgresql": "system_sql.md",
+    "mysql": "system_sql.md",
+    "mongodb": "system_sql.md",
+    "elasticsearch": "system_elasticsearch.md",
+}
+
 
 def _load_prompt(dialect: str, schema_json: str) -> str:
-    path = Path(__file__).parent.parent / "prompts" / "system_sql.md"
+    filename = _PROMPT_FILES.get(dialect, "system_sql.md")
+    path = Path(__file__).parent.parent / "prompts" / filename
     template = path.read_text()
     return template.format(dialect=dialect, schema_json=schema_json)
 

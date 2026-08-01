@@ -17,6 +17,7 @@ class DataSourceType(str, Enum):
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
     MONGODB = "mongodb"
+    ELASTICSEARCH = "elasticsearch"
 
 
 class ChartType(str, Enum):
@@ -95,13 +96,12 @@ class ProjectMembershipCreate(BaseModel):
 class DataSourceConfig(BaseModel):
     host: str
     port: int
-    database: str
-    username: str
-    password: str
+    database: str  # DB name, MongoDB database, or Elasticsearch default index pattern
+    username: str = ""
+    password: str = ""
     schema_name: str | None = None
-    ssl_mode: str | None = None
-  # MongoDB specific
-    auth_source: str | None = None
+    ssl_mode: str | None = None  # set to "require" for Elasticsearch HTTPS
+    auth_source: str | None = None  # MongoDB auth source
 
 
 class DataSourceCreate(BaseModel):

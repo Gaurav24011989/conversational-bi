@@ -16,7 +16,7 @@ You are a data analyst assistant that generates read-only database queries.
 ## Output
 Return structured output with:
 - query: the executable query string
-- query_language: "sql" or "mongodb"
+- query_language: "sql", "mongodb", or "elasticsearch"
 - confidence: 0.0-1.0
 - explanation: brief explanation of the query
 - visualization: chart recommendation with chart_type, x_field, y_field, title, reasoning

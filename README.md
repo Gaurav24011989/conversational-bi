@@ -1,6 +1,6 @@
 # Conversational BI
 
-Multi-tenant agentic platform for natural-language data queries across PostgreSQL, MySQL, and MongoDB.
+Multi-tenant agentic platform for natural-language data queries across PostgreSQL, MySQL, MongoDB, and Elasticsearch.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ Multi-tenant agentic platform for natural-language data queries across PostgreSQ
 - **Observability**: LangSmith tracing
 - **Cache/Queue**: Redis for schema cache, rate limiting, Celery workers
 
-See [docs/decisions.md](docs/decisions.md) for architecture decisions and [backend/docs/](backend/docs/) for API docs.
+See [docs/architecture.md](docs/architecture.md) for high-level and low-level architecture diagrams, [docs/decisions.md](docs/decisions.md) for architecture decisions, and [backend/docs/](backend/docs/) for API docs.
 
 ## Quick start
 
@@ -54,7 +54,7 @@ backend/
   app/
     api/v1/          # REST endpoints
     agents/          # LangGraph query agent
-    connectors/      # PostgreSQL, MySQL, MongoDB plugins
+    connectors/      # PostgreSQL, MySQL, MongoDB, Elasticsearch plugins
     core/            # Auth, RBAC, encryption, tenancy
     execution/       # Query executor, guardrails, pool manager
     llm/             # LLM provider factory
