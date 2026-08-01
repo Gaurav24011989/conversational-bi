@@ -5,7 +5,7 @@ Multi-tenant agentic platform for natural-language data queries across PostgreSQ
 ## Architecture
 
 - **API**: FastAPI with JWT auth and RBAC
-- **Frontend**: React + Vite SPA with Recharts visualization
+- **Frontend**: React + Vite SPA with Recharts visualization; embeddable React widget for third-party apps
 - **Agent**: LangGraph pipeline (schema retrieval → query generation → validation → execution → response formatting)
 - **LLM**: Configurable via LangChain (Gemini default)
 - **Observability**: LangSmith tracing
@@ -49,6 +49,30 @@ npm run dev
 
 GUI: http://localhost:5173
 
+### Embed widget (React)
+
+Embed the conversation UI in any React app via the `conversational-bi-widget` package:
+
+```bash
+cd frontend/widget
+npm install
+npm run build
+```
+
+```tsx
+import { ConversationalBIWidget } from 'conversational-bi-widget'
+import 'conversational-bi-widget/style.css'
+
+<ConversationalBIWidget
+  apiBaseUrl="http://localhost:8000"
+  accessToken={jwt}
+  projectId="..."
+  datasourceId="..."
+/>
+```
+
+See [frontend/widget/README.md](frontend/widget/README.md) for props, theming, and composition.
+
 ## Environment variables
 
 ### Backend (`backend/.env`)
@@ -88,6 +112,7 @@ backend/
   docker/            # Docker Compose and Dockerfile
 frontend/
   src/               # React application
+  widget/            # Embeddable React widget package
   e2e/               # Playwright end-to-end tests
 ```
 

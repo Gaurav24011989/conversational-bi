@@ -53,6 +53,32 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | `npm run test:e2e` | Run Playwright e2e tests |
 | `npm run test:e2e:ui` | Playwright UI mode |
 
+## React embed widget
+
+The `widget/` package is a standalone library (`conversational-bi-widget`) for embedding the conversation UI in any React app.
+
+```bash
+cd frontend/widget
+npm install
+npm run build
+```
+
+Usage in a host app:
+
+```tsx
+import { ConversationalBIWidget } from 'conversational-bi-widget'
+import 'conversational-bi-widget/style.css'
+
+<ConversationalBIWidget
+  apiBaseUrl="https://api.example.com"
+  accessToken={jwt}
+  projectId="..."
+  datasourceId="..."
+/>
+```
+
+See [widget/README.md](widget/README.md) for full props, theming, and advanced composition.
+
 ## E2E tests
 
 Playwright tests mock the backend API via route interception — no live backend or LLM required.
@@ -84,5 +110,6 @@ frontend/
     utils/           # localStorage helpers
     pages/         # Route pages
     types/         # TypeScript API types
+  widget/          # Embeddable React package (conversational-bi-widget)
   e2e/             # Playwright tests + API mocks
 ```

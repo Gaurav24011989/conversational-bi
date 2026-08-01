@@ -60,6 +60,7 @@ This file is the canonical project context for AI coding agents. Read it before 
     └── pyproject.toml
 └── frontend/
     ├── src/               # React SPA (api client, pages, components)
+    ├── widget/            # Embeddable React package (conversational-bi-widget)
     ├── e2e/               # Playwright tests with API mocks
     └── package.json
 ```
@@ -149,6 +150,7 @@ See `backend/.env.example` and `README.md` for the full list.
 - Chart rendering branches on `visualization.chart_type` in `QueryResult` component.
 - Conversation list is client-side (`localStorage`) until a backend list endpoint exists.
 - `data-testid` attributes on interactive elements for Playwright e2e tests.
+- **Embed widget**: `frontend/widget/` publishes `conversational-bi-widget` — a scoped React component (`ConversationalBIWidget`) for third-party apps. Props: `apiBaseUrl`, `accessToken`, `projectId`, `datasourceId`, optional `conversationId`. Styles are prefixed `.cbi-widget`. Build with `cd frontend/widget && npm run build`.
 
 ## Testing
 
@@ -222,6 +224,7 @@ Auth: Bearer JWT on all endpoints except `/auth/register`, `/auth/login`, `/heal
 | [backend/docs/audit-partitioning.md](backend/docs/audit-partitioning.md) | Audit log scaling strategy |
 | [backend/README.md](backend/README.md) | Datasource config examples (incl. Elasticsearch) |
 | [frontend/README.md](frontend/README.md) | Frontend setup, scripts, e2e tests |
+| [frontend/widget/README.md](frontend/widget/README.md) | Embeddable React widget for third-party apps |
 
 ## Agent workflow tips
 

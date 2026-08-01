@@ -13,6 +13,7 @@ flowchart TB
   subgraph users [Users and Clients]
     Analyst[Business Analyst]
     ReactGUI["React GUI\n(Vite + Recharts)"]
+    ReactWidget["React Embed Widget\n(conversational-bi-widget)"]
     APIClient[API Client / SDK]
   end
 
@@ -41,8 +42,10 @@ flowchart TB
   end
 
   Analyst --> ReactGUI
+  Analyst --> ReactWidget
   Analyst --> APIClient
   ReactGUI --> LB
+  ReactWidget --> LB
   APIClient --> LB
   LB --> API
 
@@ -505,6 +508,24 @@ flowchart TB
 | `/projects/:id` | Project detail (datasources, conversations) | Protected |
 | `/projects/:id/conversations/:id` | NL query chat | Protected |
 
+### Embed widget (`frontend/widget/`)
+
+The `conversational-bi-widget` package exposes a drop-in `<ConversationalBIWidget />` for host React applications. It reuses the same conversation UI patterns (messages, clarifications, `QueryResponse` charts/tables) but does not depend on React Router or the SPA auth flow — the host app supplies `apiBaseUrl` and `accessToken`.
+
+```tsx
+import { ConversationalBIWidget } from 'conversational-bi-widget'
+import 'conversational-bi-widget/style.css'
+
+<ConversationalBIWidget
+  apiBaseUrl="https://api.example.com"
+  accessToken={jwt}
+  projectId="..."
+  datasourceId="..."
+/>
+```
+
+Styles are scoped under `.cbi-widget` to avoid leaking into the host app. See [frontend/widget/README.md](../frontend/widget/README.md).
+
 ---
 
 ## Related documentation
@@ -513,4 +534,5 @@ flowchart TB
 - [API reference](../backend/docs/api.md)
 - [JSON response contract](../backend/docs/json-response-contract.md)
 - [Frontend README](../frontend/README.md)
+- [Embed widget README](../frontend/widget/README.md)
 - [Audit log partitioning](../backend/docs/audit-partitioning.md)
