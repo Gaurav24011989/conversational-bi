@@ -5,7 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.graph import query_agent
-from app.models import Conversation, Message, MessageRole, Project
+from app.i18n import resolve_locale, t
+from app.models import Conversation, Message, MessageRole, Organization, Project, User
 from app.schemas import ConversationCreate, MessageCreate, QueryResponse
 from app.services.audit_service import audit_service
 from app.services.cache import rate_limiter
@@ -47,11 +48,21 @@ class ConversationService:
         self,
         db: AsyncSession,
         conversation: Conversation,
-        user_id: UUID,
+        user: User,
         org_id: UUID,
         data: MessageCreate,
+        accept_language: str | None = None,
     ) -> tuple[Message, Message]:
-        allowed, msg = await rate_limiter.check_rate_limit(user_id, org_id)
+        org_result = await db.execute(select(Organization).where(Organization.id == org_id))
+        org = org_result.scalar_one_or_none()
+        locale = resolve_locale(
+            request_locale=data.locale,
+            accept_language=accept_language,
+            user_preferred=user.preferred_locale,
+            org_default=org.default_locale if org else None,
+        )
+
+        allowed, msg = await rate_limiter.check_rate_limit(user.id, org_id, locale)
         if not allowed:
             raise ValueError(msg)
 
@@ -65,7 +76,7 @@ class ConversationService:
 
         ds = await datasource_service.get(db, conversation.datasource_id)
         if not ds:
-            raise ValueError("Data source not found")
+            raise ValueError(t("errors.datasource_not_found", locale))
 
         schema_context = await schema_service.get_schema_for_agent(
             db, ds.id, org_id, conversation.project_id
@@ -93,6 +104,7 @@ class ConversationService:
             "allowed_tables": ds.allowed_tables,
             "schema_context": schema_context,
             "natural_language_query": data.content,
+            "locale": locale,
             "generated_query": None,
             "query_language": None,
             "explanation": None,
@@ -122,7 +134,7 @@ class ConversationService:
             db=db,
             org_id=org_id,
             project_id=conversation.project_id,
-            user_id=user_id,
+            user_id=user.id,
             datasource_id=ds.id,
             action="query",
             natural_language_query=data.content,

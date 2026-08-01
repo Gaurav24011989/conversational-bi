@@ -1,0 +1,9 @@
+{
+  "errors.user_rate_limit": "User rate limit exceeded",
+  "errors.org_rate_limit": "Organization rate limit exceeded",
+  "errors.query_generation_failed": "Failed to generate query: {detail}",
+  "errors.datasource_not_found": "Data source not found",
+  "errors.conversation_not_found": "Conversation not found",
+  "errors.unsupported_locale": "Unsupported locale: {locale}",
+  "errors.query_error": "Query error"
+}

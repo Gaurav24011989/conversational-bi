@@ -1,4 +1,5 @@
 from app.agents.state import AgentState
+from app.i18n import t
 from app.schemas import ChartType
 
 
@@ -40,10 +41,12 @@ async def format_response_node(state: AgentState) -> dict:
     error = state.get("error")
     viz_draft = state.get("visualization_draft") or {}
     query_result = state.get("query_result")
+    locale = state.get("locale", "en")
 
     if error:
         response = {
             "type": "query_result",
+            "locale": locale,
             "natural_language_query": state.get("natural_language_query", ""),
             "generated_query": state.get("generated_query"),
             "query_language": state.get("query_language"),
@@ -58,6 +61,7 @@ async def format_response_node(state: AgentState) -> dict:
 
     response = {
         "type": "query_result",
+        "locale": locale,
         "natural_language_query": state.get("natural_language_query", ""),
         "generated_query": state.get("generated_query"),
         "query_language": state.get("query_language"),

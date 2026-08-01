@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token, get_current_user, get_password_hash, verify_password
 from app.database import get_db
+from app.i18n import is_supported_locale, t
 from app.models import Organization, Project, ProjectMembership, User, UserRole
-from app.schemas import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.schemas import LoginRequest, RegisterRequest, TokenResponse, UserLocaleUpdate, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -62,4 +63,21 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me/locale", response_model=UserResponse)
+async def update_locale(
+    data: UserLocaleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not is_supported_locale(data.preferred_locale):
+        locale = current_user.preferred_locale or "en"
+        raise HTTPException(
+            status_code=400,
+            detail=t("errors.unsupported_locale", locale, locale=data.preferred_locale),
+        )
+    current_user.preferred_locale = data.preferred_locale
+    await db.flush()
     return current_user

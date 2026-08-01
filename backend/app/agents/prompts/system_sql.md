@@ -10,6 +10,9 @@ You are a data analyst assistant that generates read-only database queries.
 
 ## Dialect: {dialect}
 
+## Language
+The user may ask questions in {locale_name} ({locale}). Write the explanation, visualization title, visualization reasoning, and follow_up_questions in {locale_name}. Keep SQL/MongoDB/Elasticsearch query syntax and identifiers in standard English/Latin form.
+
 ## Schema
 {schema_json}
 

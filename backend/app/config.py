@@ -1,3 +1,4 @@
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +35,18 @@ class Settings(BaseSettings):
 
     rate_limit_per_user: int = 60
     rate_limit_per_org: int = 1000
+
+    default_locale: str = "en"
+    supported_locales: list[str] = Field(
+        default_factory=lambda: ["en", "fr", "de", "es", "hi", "zh"]
+    )
+
+    @field_validator("supported_locales", mode="before")
+    @classmethod
+    def parse_supported_locales(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
 
     oidc_enabled: bool = False
     oidc_client_id: str = ""

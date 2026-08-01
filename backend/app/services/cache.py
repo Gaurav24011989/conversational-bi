@@ -6,6 +6,7 @@ import redis.asyncio as aioredis
 
 from app.config import settings
 from app.core.tenancy import query_cache_key, rate_limit_org_key, rate_limit_user_key, schema_cache_key
+from app.i18n import t
 
 _redis: aioredis.Redis | None = None
 
@@ -68,7 +69,7 @@ cache_service = CacheService()
 class RateLimiter:
     WINDOW_SECONDS = 60
 
-    async def check_rate_limit(self, user_id: UUID, org_id: UUID) -> tuple[bool, str]:
+    async def check_rate_limit(self, user_id: UUID, org_id: UUID, locale: str = "en") -> tuple[bool, str]:
         redis = await get_redis()
         user_key = rate_limit_user_key(user_id)
         org_key = rate_limit_org_key(org_id)
@@ -84,9 +85,9 @@ class RateLimiter:
         org_count = results[2]
 
         if user_count > settings.rate_limit_per_user:
-            return False, "User rate limit exceeded"
+            return False, t("errors.user_rate_limit", locale)
         if org_count > settings.rate_limit_per_org:
-            return False, "Organization rate limit exceeded"
+            return False, t("errors.org_rate_limit", locale)
         return True, ""
 
 

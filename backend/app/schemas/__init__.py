@@ -57,8 +57,24 @@ class UserResponse(BaseModel):
     full_name: str | None
     org_id: UUID
     is_active: bool
+    preferred_locale: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class UserLocaleUpdate(BaseModel):
+    preferred_locale: str = Field(..., min_length=2, max_length=10)
+
+
+class LocaleInfo(BaseModel):
+    code: str
+    name: str
+    native_name: str
+
+
+class LocalesResponse(BaseModel):
+    default_locale: str
+    supported_locales: list[LocaleInfo]
 
 
 # Organization & Project
@@ -158,6 +174,12 @@ class ConversationResponse(BaseModel):
 
 class MessageCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=10000)
+    locale: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=10,
+        description="BCP-47 locale code (e.g. en, fr, de, es, hi, zh)",
+    )
 
 
 class AxisConfig(BaseModel):
@@ -212,6 +234,7 @@ class QueryResponse(BaseModel):
     conversation_id: UUID
     role: str = "assistant"
     type: str = "query_result"
+    locale: str | None = None
     natural_language_query: str
     generated_query: str | None = None
     query_language: str | None = None
